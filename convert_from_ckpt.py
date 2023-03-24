@@ -1,5 +1,6 @@
 from diffusers.models import UNet2DConditionModel
 from .tuneavideo.models.unet import UNet3DConditionModel
+from diffusers import DDIMScheduler
 
 def shave_segments(path, n_shave_prefix_segments=1):
     """
@@ -403,7 +404,14 @@ def convert_unet_checkpoint(checkpoint, original_config, extract_ema=False):
         if global_step == 110000:
             # v2.1 needs to upcast attention
             upcast_attention = True
-    image_size = 512 if global_step == 875000 else 768
+    try:
+        parameterization = original_config.model.params.parameterization
+        if parameterization == "v":
+            image_size = 768
+        else:
+            image_size = 512
+    except AttributeError:
+        image_size = 512
     unet_config = create_unet_diffusers_config(original_config, image_size=image_size)
     unet_config["upcast_attention"] = upcast_attention
     #unet = UNet2DConditionModel(**unet_config)
@@ -432,3 +440,20 @@ def convert_unet_checkpoint(checkpoint, original_config, extract_ema=False):
     unet.load_state_dict(converted_unet_checkpoint)
 
     return unet
+
+def convert_scheduler_checkpoint(model):
+    beta_end = model.model.linear_end
+    beta_start = model.model.linear_start
+    num_train_timesteps = model.model.num_timesteps
+    prediction_type = "v_prediction" if model.model.parameterization == "v" else "epsilon"
+    scheduler = DDIMScheduler(
+        beta_end=beta_end,
+        beta_schedule="scaled_linear",
+        beta_start=beta_start,
+        num_train_timesteps=num_train_timesteps,
+        steps_offset=1,
+        clip_sample=False,
+        set_alpha_to_one=False,
+        prediction_type=prediction_type,
+    )
+    return scheduler

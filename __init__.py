@@ -6,9 +6,11 @@ from PIL import Image
 from comfy import model_management
 import comfy.samplers
 from .sd import load_checkpoint_guess_config
+from .convert_from_ckpt import convert_scheduler_checkpoint
+from .tuneavideo.util import ddim_inversion
 import comfy.utils
 import folder_paths
-
+from einops import rearrange
 
 def common_ksampler(model, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent, denoise=1.0, disable_noise=False, start_step=None, last_step=None, force_full_denoise=False):
     latent_image = latent["samples"]
@@ -238,10 +240,56 @@ class CheckpointLoaderSimpleSequence:
         return out
 
 
+class SetLatentNoiseSequence:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": { "samples": ("LATENT",),
+                              "noise": ("NOISE",),
+                              }}
+    RETURN_TYPES = ("LATENT",)
+    FUNCTION = "set_noise"
+
+    CATEGORY = "latent"
+
+    def set_noise(self, samples, noise):
+        s = samples.copy()
+        s["noise_sequence"] = noise
+        return (s,)
+
+
+class DdimInversionSequence:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": { "samples": ("LATENT",),
+                              "model": ("MODEL",),
+                              "clip": ("CLIP",),
+                              "steps": ("INT", {"default": 20, "min": 1, "max": 10000}),
+                              }}
+    RETURN_TYPES = ("NOISE",)
+    FUNCTION = "ddim_inversion"
+
+    CATEGORY = "latent"
+
+    def ddim_inversion(self, samples, model, clip, steps):
+        device = model_management.get_torch_device()
+        ddim_scheduler = convert_scheduler_checkpoint(model)
+        context = torch.cat([clip.encode(""), clip.encode("")])
+        ddim_scheduler.set_timesteps(steps)
+        samples = samples["samples"]
+        samples = rearrange(samples.unsqueeze(0), "b f c h w -> b c f h w")
+        model_management.load_model_gpu(model)
+        context = context.to(device)
+        samples = samples.to(device)
+        s = ddim_inversion(model, ddim_scheduler, samples, steps, context)
+        return (s,)
+
+
 NODE_CLASS_MAPPINGS = {
     "LoadImageSequence": LoadImageSequence,
     "VAEEncodeForInpaintSequence": VAEEncodeForInpaintSequence,
     "KSamplerSequence": KSamplerSequence,
     "LoadImageMaskSequence": LoadImageMaskSequence,
     "CheckpointLoaderSimpleSequence": CheckpointLoaderSimpleSequence,
+    "SetLatentNoiseSequence": SetLatentNoiseSequence,
+    "DdimInversionSequence": DdimInversionSequence,
 }
