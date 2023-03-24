@@ -104,6 +104,9 @@ def load_checkpoint_guess_config(ckpt_path, output_vae=True, output_clip=True, e
     model = load_model_weights(model, sd, verbose=False, load_state_dict_to=load_state_dict_to)
     model.model.diffusion_model = convert_unet_checkpoint(sd, OmegaConf.create({"model": model_config}))
 
+    if model_management.xformers_enabled():
+        model.model.diffusion_model.enable_xformers_memory_efficient_attention()
+
     if fp16:
        model = model.half()
 
