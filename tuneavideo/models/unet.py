@@ -297,6 +297,9 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin):
 
         sample = rearrange(x.unsqueeze(0), "b f c h w -> b c f h w")
 
+        sample = sample.type(self.dtype)
+        context = context.type(self.dtype)
+
         down_block_additional_residuals = None
         mid_block_additional_residual = None
 

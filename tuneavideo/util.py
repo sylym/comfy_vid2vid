@@ -22,6 +22,7 @@ def next_step(model_output: Union[torch.FloatTensor, np.ndarray], timestep: int,
 def get_noise_pred_single(latents, t, context, unet):
     latents = rearrange(latents.squeeze(0), "c f h w -> f c h w")
     noise_pred = unet(latents, t.view(1), context=context)
+    noise_pred = rearrange(noise_pred.unsqueeze(0), "b f c h w -> b c f h w")
     return noise_pred
 
 

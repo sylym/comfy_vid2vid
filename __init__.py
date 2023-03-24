@@ -17,10 +17,13 @@ def common_ksampler(model, seed, steps, cfg, sampler_name, scheduler, positive, 
     noise_mask = None
     device = model_management.get_torch_device()
 
-    if disable_noise:
-        noise = torch.zeros(latent_image.size(), dtype=latent_image.dtype, layout=latent_image.layout, device="cpu")
+    if "noise_sequence" in latent:
+        noise = latent["noise_sequence"]
     else:
-        noise = torch.randn(latent_image.size(), dtype=latent_image.dtype, layout=latent_image.layout, generator=torch.manual_seed(seed), device="cpu")
+        if disable_noise:
+            noise = torch.zeros(latent_image.size(), dtype=latent_image.dtype, layout=latent_image.layout, device="cpu")
+        else:
+            noise = torch.randn(latent_image.size(), dtype=latent_image.dtype, layout=latent_image.layout, generator=torch.manual_seed(seed), device="cpu")
 
     if "noise_mask_sequence" in latent:
         noise_mask_list = []
@@ -280,7 +283,9 @@ class DdimInversionSequence:
         model_management.load_model_gpu(model)
         context = context.to(device)
         samples = samples.to(device)
-        s = ddim_inversion(model, ddim_scheduler, samples, steps, context)
+        s = ddim_inversion(model, ddim_scheduler, samples, steps, context)[-1]
+        s = rearrange(s.squeeze(0), "c f h w -> f c h w")
+        s = s.cpu()
         return (s,)
 
 
