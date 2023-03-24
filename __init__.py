@@ -118,7 +118,11 @@ class LoadImageSequence:
             os.makedirs(s.input_dir)
         image_folder = [name for name in os.listdir(s.input_dir) if os.path.isdir(os.path.join(s.input_dir,name)) and len(os.listdir(os.path.join(s.input_dir,name))) != 0]
         return {"required":
-                    {"image_sequence_folder": (sorted(image_folder), )}
+                    {"image_sequence_folder": (sorted(image_folder), ),
+                     "sample_start_idx": ("INT", {"default": 1, "min": 1, "max": 10000}),
+                     "sample_frame_rate": ("INT", {"default": 1, "min": 1, "max": 10000}),
+                     "n_sample_frames": ("INT", {"default": 1, "min": 1, "max": 10000})
+                     }
                 }
 
     CATEGORY = "image"
@@ -126,13 +130,14 @@ class LoadImageSequence:
     RETURN_TYPES = ("IMAGE", "MASK_SEQUENCE")
     FUNCTION = "load_image_sequence"
 
-    def load_image_sequence(self, image_sequence_folder):
+    def load_image_sequence(self, image_sequence_folder, sample_start_idx, sample_frame_rate, n_sample_frames):
         image_path = os.path.join(self.input_dir, image_sequence_folder)
         file_list = sorted(os.listdir(image_path), key=lambda s: sum(((s, int(n)) for s, n in re.findall(r'(\D+)(\d+)', 'a%s0' % s)), ()))
         sample_frames = []
         sample_frames_mask = []
-        for file in file_list:
-            i = Image.open(os.path.join(image_path, file))
+        sample_index = list(range(sample_start_idx-1, len(file_list), sample_frame_rate))[:n_sample_frames]
+        for num in sample_index:
+            i = Image.open(os.path.join(image_path, file_list[num]))
             image = i.convert("RGB")
             image = np.array(image).astype(np.float32) / 255.0
             image = torch.from_numpy(image)[None,]
@@ -200,7 +205,11 @@ class LoadImageMaskSequence:
         image_folder = [name for name in os.listdir(s.input_dir) if os.path.isdir(os.path.join(s.input_dir, name)) and len(os.listdir(os.path.join(s.input_dir, name))) != 0]
         return {"required":
                     {"image_sequence_folder": (sorted(image_folder), ),
-                    "channel": (["alpha", "red", "green", "blue"], ),}
+                    "channel": (["alpha", "red", "green", "blue"], ),
+                     "sample_start_idx": ("INT", {"default": 1, "min": 1, "max": 10000}),
+                     "sample_frame_rate": ("INT", {"default": 1, "min": 1, "max": 10000}),
+                     "n_sample_frames": ("INT", {"default": 1, "min": 1, "max": 10000})
+                     }
                 }
 
     CATEGORY = "image"
@@ -208,12 +217,13 @@ class LoadImageMaskSequence:
     RETURN_TYPES = ("MASK_SEQUENCE",)
     FUNCTION = "load_image_sequence"
 
-    def load_image_sequence(self, image_sequence_folder, channel):
+    def load_image_sequence(self, image_sequence_folder, channel, sample_start_idx, sample_frame_rate, n_sample_frames):
         image_path = os.path.join(self.input_dir, image_sequence_folder)
         file_list = sorted(os.listdir(image_path), key=lambda s: sum(((s, int(n)) for s, n in re.findall(r'(\D+)(\d+)', 'a%s0' % s)), ()))
         sample_frames_mask = []
-        for file in file_list:
-            i = Image.open(os.path.join(image_path, file))
+        sample_index = list(range(sample_start_idx - 1, len(file_list), sample_frame_rate))[:n_sample_frames]
+        for num in sample_index:
+            i = Image.open(os.path.join(image_path, file_list[num]))
             mask = None
             c = channel[0].upper()
             if c in i.getbands():

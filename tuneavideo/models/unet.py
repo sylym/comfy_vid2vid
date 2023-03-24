@@ -296,7 +296,6 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin):
         context = context[0].unsqueeze(0)
 
         sample = rearrange(x.unsqueeze(0), "b f c h w -> b c f h w")
-
         sample = sample.type(self.dtype)
         context = context.type(self.dtype)
 
@@ -308,6 +307,9 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin):
             for output in control["output"]:
                 down_block_additional_residuals.append(rearrange(output.unsqueeze(0), "a b c d e -> a c b d e"))
             mid_block_additional_residual = rearrange(control["middle"][0].unsqueeze(0), "a b c d e -> a c b d e")
+
+        del x, timesteps, control
+        torch.cuda.empty_cache()
 
         # By default samples have to be AT least a multiple of the overall upsampling factor.
         # The overall upsampling factor is equal to 2 ** (# num of upsampling layears).
