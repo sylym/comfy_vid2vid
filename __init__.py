@@ -11,6 +11,8 @@ from .tuneavideo.util import ddim_inversion
 import comfy.utils
 import folder_paths
 from einops import rearrange
+from .train_tuneavideo import train
+import copy
 
 def common_ksampler(model, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent, denoise=1.0, disable_noise=False, start_step=None, last_step=None, force_full_denoise=False):
     latent_image = latent["samples"]
@@ -299,6 +301,31 @@ class DdimInversionSequence:
         return (s,)
 
 
+class TrainUnetSequence:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {"samples": ("LATENT",),
+                             "model": ("MODEL",),
+                             "context": ("CONDITIONING",),
+                             "steps": ("INT", {"default": 20, "min": 0, "max": 10000}),
+                             }}
+
+    RETURN_TYPES = ("MODEL",)
+    FUNCTION = "train_unet"
+
+    CATEGORY = "sampling"
+
+    def train_unet(self, samples, model, context, steps):
+        device = model_management.get_torch_device()
+        noise_scheduler = convert_scheduler_checkpoint(model)
+        samples = rearrange(samples["samples"], "f c h w -> c f h w")
+        with torch.inference_mode(mode=False):
+            model_train = train(copy.deepcopy(model), noise_scheduler, samples, context[0][0].squeeze(0), device, max_train_steps=steps)
+        if model_management.should_use_fp16():
+            model_train.model = model_train.model.half()
+        return (model_train,)
+
+
 NODE_CLASS_MAPPINGS = {
     "LoadImageSequence": LoadImageSequence,
     "VAEEncodeForInpaintSequence": VAEEncodeForInpaintSequence,
@@ -307,4 +334,5 @@ NODE_CLASS_MAPPINGS = {
     "CheckpointLoaderSimpleSequence": CheckpointLoaderSimpleSequence,
     "SetLatentNoiseSequence": SetLatentNoiseSequence,
     "DdimInversionSequence": DdimInversionSequence,
+    "TrainUnetSequence": TrainUnetSequence,
 }
