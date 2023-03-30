@@ -113,7 +113,7 @@ class KSamplerSequence:
 
 
 class LoadImageSequence:
-    input_dir = os.path.realpath("input")
+    input_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), 'input')
     @classmethod
     def INPUT_TYPES(s):
         if not os.path.exists(s.input_dir):
@@ -199,7 +199,7 @@ class VAEEncodeForInpaintSequence:
 
 
 class LoadImageMaskSequence:
-    input_dir = os.path.realpath("input")
+    input_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), 'input')
     @classmethod
     def INPUT_TYPES(s):
         if not os.path.exists(s.input_dir):
