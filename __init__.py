@@ -37,6 +37,16 @@ def common_ksampler(model, seed, steps, cfg, sampler_name, scheduler, positive, 
         noise_mask = torch.stack(noise_mask_list)
         noise_mask = noise_mask.to(device)
 
+    else:
+        if "noise_mask" in latent:
+            noise_mask = latent['noise_mask']
+            noise_mask = torch.nn.functional.interpolate(noise_mask[None, None,], size=(noise.shape[2], noise.shape[3]),
+                                                         mode="bilinear")
+            noise_mask = noise_mask.round()
+            noise_mask = torch.cat([noise_mask] * noise.shape[1], dim=1)
+            noise_mask = torch.cat([noise_mask] * noise.shape[0])
+            noise_mask = noise_mask.to(device)
+
 
     real_model = None
     model_management.load_model_gpu(model)
@@ -106,7 +116,7 @@ class KSamplerSequence:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "sample"
 
-    CATEGORY = "sampling"
+    CATEGORY = "vid2vid"
 
     def sample(self, model, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent_image, denoise=1.0):
         return common_ksampler(model, seed, steps, cfg, sampler_name, scheduler, positive, negative, latent_image, denoise=denoise)
@@ -127,7 +137,7 @@ class LoadImageSequence:
                      }
                 }
 
-    CATEGORY = "image"
+    CATEGORY = "vid2vid"
 
     RETURN_TYPES = ("IMAGE", "MASK_SEQUENCE")
     FUNCTION = "load_image_sequence"
@@ -164,7 +174,7 @@ class VAEEncodeForInpaintSequence:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "encode"
 
-    CATEGORY = "latent/inpaint"
+    CATEGORY = "vid2vid"
 
     def encode(self, vae, pixels, mask_sequence):
         pixels_list = [x for x in torch.split(pixels, 1)]
@@ -214,7 +224,7 @@ class LoadImageMaskSequence:
                      }
                 }
 
-    CATEGORY = "image"
+    CATEGORY = "vid2vid"
 
     RETURN_TYPES = ("MASK_SEQUENCE",)
     FUNCTION = "load_image_sequence"
@@ -244,10 +254,10 @@ class CheckpointLoaderSimpleSequence:
     def INPUT_TYPES(s):
         return {"required": { "ckpt_name": (folder_paths.get_filename_list("checkpoints"), ),
                              }}
-    RETURN_TYPES = ("MODEL", "CLIP", "VAE")
+    RETURN_TYPES = ("ORIGINAL_MODEL", "CLIP", "VAE")
     FUNCTION = "load_checkpoint"
 
-    CATEGORY = "loaders"
+    CATEGORY = "vid2vid"
 
     def load_checkpoint(self, ckpt_name, output_vae=True, output_clip=True):
         ckpt_path = folder_paths.get_full_path("checkpoints", ckpt_name)
@@ -264,7 +274,7 @@ class SetLatentNoiseSequence:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "set_noise"
 
-    CATEGORY = "latent"
+    CATEGORY = "vid2vid"
 
     def set_noise(self, samples, noise):
         s = samples.copy()
@@ -283,7 +293,7 @@ class DdimInversionSequence:
     RETURN_TYPES = ("NOISE",)
     FUNCTION = "ddim_inversion"
 
-    CATEGORY = "latent"
+    CATEGORY = "vid2vid"
 
     def ddim_inversion(self, samples, model, clip, steps):
         device = model_management.get_torch_device()
@@ -305,7 +315,7 @@ class TrainUnetSequence:
     @classmethod
     def INPUT_TYPES(s):
         return {"required": {"samples": ("LATENT",),
-                             "model": ("MODEL",),
+                             "model": ("ORIGINAL_MODEL",),
                              "context": ("CONDITIONING",),
                              "steps": ("INT", {"default": 20, "min": 0, "max": 10000}),
                              }}
@@ -313,7 +323,7 @@ class TrainUnetSequence:
     RETURN_TYPES = ("MODEL",)
     FUNCTION = "train_unet"
 
-    CATEGORY = "sampling"
+    CATEGORY = "vid2vid"
 
     def train_unet(self, samples, model, context, steps):
         device = model_management.get_torch_device()
@@ -328,11 +338,11 @@ class TrainUnetSequence:
 
 NODE_CLASS_MAPPINGS = {
     "LoadImageSequence": LoadImageSequence,
-    "VAEEncodeForInpaintSequence": VAEEncodeForInpaintSequence,
-    "KSamplerSequence": KSamplerSequence,
     "LoadImageMaskSequence": LoadImageMaskSequence,
-    "CheckpointLoaderSimpleSequence": CheckpointLoaderSimpleSequence,
-    "SetLatentNoiseSequence": SetLatentNoiseSequence,
+    "VAEEncodeForInpaintSequence": VAEEncodeForInpaintSequence,
     "DdimInversionSequence": DdimInversionSequence,
+    "SetLatentNoiseSequence": SetLatentNoiseSequence,
+    "CheckpointLoaderSimpleSequence": CheckpointLoaderSimpleSequence,
     "TrainUnetSequence": TrainUnetSequence,
+    "KSamplerSequence": KSamplerSequence,
 }
