@@ -29,6 +29,8 @@ All nodes are classified under the vid2vid category.
 ## Nodes
 
 ### LoadImageSequence
+![Local Image](images/nodes/LoadImageSequence.png)
+
 Load image sequence from a folder.
 
 **Inputs:**
@@ -56,8 +58,10 @@ Load image sequence from a folder.
     - The number of images in the sequence. The number of images in `image_sequence_folder` must be greater than or equal to `sample_start_idx - 1 + n_sample_frames * sample_frame_rate`.
     - If you want to use the node `CheckpointLoaderSimpleSequence` to generate a sequence of pictures, set `n_sample_frames` >= 3.
 
-
+---
 ### LoadImageMaskSequence
+![Local Image](images/nodes/LoadImageMaskSequence.png)
+
 Load mask sequence from a folder.
 
 **Inputs:**
@@ -84,8 +88,10 @@ Load mask sequence from a folder.
 - n_sample_frames
     - The number of images in the sequence. The number of images in `image_sequence_folder` must be greater than or equal to `sample_start_idx - 1 + n_sample_frames * sample_frame_rate`.
 
-
+---
 ### VAEEncodeForInpaintSequence
+![Local Image](images/nodes/VAEEncodeForInpaintSequence.png)
+
 Encode the input image sequence into a latent vector using a Variational Autoencoder (VAE) model. Also add image mask sequence to latent vector.
 
 **Inputs:**
@@ -105,8 +111,10 @@ Encode the input image sequence into a latent vector using a Variational Autoenc
 **Parameters:**
 - None
 
-
+---
 ### DdimInversionSequence
+![Local Image](images/nodes/DdimInversionSequence.png)
+
 Generate a specific noise vector by inverting the input latent vector using the Ddim model. Usually used to improve the time consistency of the output image sequence.
 
 **Inputs:**
@@ -127,8 +135,10 @@ Generate a specific noise vector by inverting the input latent vector using the 
 - steps
     - The number of steps to invert the latent vector.
 
-
+---
 ### SetLatentNoiseSequence
+![Local Image](images/nodes/SetLatentNoiseSequence.png)
+
 Add noise vector to latent vector.
 
 **Inputs:**
@@ -145,8 +155,10 @@ Add noise vector to latent vector.
 **Parameters:**
 - None
 
-
+---
 ### CheckpointLoaderSimpleSequence
+![Local Image](images/nodes/CheckpointLoaderSimpleSequence.png)
+
 Load the checkpoint model into UNet3DConditionModel. Usually used to generate a sequence of pictures with time continuity.
 
 **Inputs:**
@@ -166,12 +178,16 @@ Load the checkpoint model into UNet3DConditionModel. Usually used to generate a 
 - ckpt_name
     - The name of the checkpoint model. The model should be in the `models/checkpoints` folder.
 
-
+---
 ### LoraLoaderSequence
+![Local Image](images/nodes/LoraLoaderSequence.png)
+
 Same function as `LoraLoader` node, but acts on UNet3DConditionModel. The input and output of the model are both of `ORIGINAL_MODEL` type.
 
-
+---
 ### TrainUnetSequence
+![Local Image](images/nodes/TrainUnetSequence.png)
+
 Fine-tune the incoming model using latent vector and context, and convert the model to inference mode.
 
 **Inputs:**
@@ -192,7 +208,10 @@ Fine-tune the incoming model using latent vector and context, and convert the mo
 - steps
     - The number of steps to fine-tune the model. If the steps is 0, the model will not be fine-tuned.
 
+---
 ### KSamplerSequence
+![Local Image](images/nodes/KSamplerSequence.png)
+
 Same function as `KSampler` node, but added support for noise vector and image mask sequence.
 
 
