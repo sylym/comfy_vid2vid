@@ -140,12 +140,12 @@ def load_checkpoint_guess_config(ckpt_path, output_vae=True, output_clip=True, o
     model = instantiate_from_config(model_config)
     model = load_model_weights(model, sd, verbose=False, load_state_dict_to=load_state_dict_to)
 
-    #with torch.inference_mode(mode=False):
-    model.model.diffusion_model = convert_unet_checkpoint(sd, OmegaConf.create({"model": model_config}))
-    if model_management.xformers_enabled():
-        model.model.diffusion_model.enable_xformers_memory_efficient_attention()
+    with torch.inference_mode(mode=False):
+        model.model.diffusion_model = convert_unet_checkpoint(sd, OmegaConf.create({"model": model_config}))
+        if model_management.xformers_enabled():
+            model.model.diffusion_model.enable_xformers_memory_efficient_attention()
 
-    if fp16:
-        model = model.half()
+    #if fp16:
+    #    model = model.half()
 
     return (ModelPatcher(model), clip, vae, clipvision)

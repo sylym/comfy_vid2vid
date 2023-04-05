@@ -40,13 +40,11 @@ def common_ksampler(model, seed, steps, cfg, sampler_name, scheduler, positive, 
     else:
         if "noise_mask" in latent:
             noise_mask = latent['noise_mask']
-            noise_mask = torch.nn.functional.interpolate(noise_mask[None, None,], size=(noise.shape[2], noise.shape[3]),
-                                                         mode="bilinear")
+            noise_mask = torch.nn.functional.interpolate(noise_mask[None, None,], size=(noise.shape[2], noise.shape[3]), mode="bilinear")
             noise_mask = noise_mask.round()
             noise_mask = torch.cat([noise_mask] * noise.shape[1], dim=1)
             noise_mask = torch.cat([noise_mask] * noise.shape[0])
             noise_mask = noise_mask.to(device)
-
 
     real_model = None
     model_management.load_model_gpu(model)
@@ -82,7 +80,7 @@ def common_ksampler(model, seed, steps, cfg, sampler_name, scheduler, positive, 
     model_management.load_controlnet_gpu(control_net_models)
 
     if sampler_name in comfy.samplers.KSampler.SAMPLERS:
-        sampler = comfy.samplers.KSampler(real_model, steps=steps, device=device, sampler=sampler_name, scheduler=scheduler, denoise=denoise)
+        sampler = comfy.samplers.KSampler(real_model, steps=steps, device=device, sampler=sampler_name, scheduler=scheduler, denoise=denoise, model_options=model.model_options)
     else:
         #other samplers
         pass
@@ -254,7 +252,7 @@ class CheckpointLoaderSimpleSequence:
     def INPUT_TYPES(s):
         return {"required": { "ckpt_name": (folder_paths.get_filename_list("checkpoints"), ),
                              }}
-    RETURN_TYPES = ("MODEL", "CLIP", "VAE")
+    RETURN_TYPES = ("ORIGINAL_MODEL", "CLIP", "VAE")
     FUNCTION = "load_checkpoint"
 
     CATEGORY = "vid2vid"
