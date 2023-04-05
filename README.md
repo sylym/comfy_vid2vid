@@ -25,6 +25,9 @@ For ComfyUI portable standalone build:
 
 ## Usage
 All nodes are classified under the vid2vid category.
+For some workflow examples you can check out:
+
+### [vid2vid workflow examples](https://github.com/sylym/comfy_vid2vid/releases/tag/v1.0.0)
 
 ## Nodes
 
@@ -198,7 +201,7 @@ Fine-tune the incoming model using latent vector and context, and convert the mo
     - The model that will be fine-tuned.
 
 - context: CONDITIONING
-    - The context that will be used to fine-tune the incoming model.
+    - The context used for fine-tuning the input model, typically consists of words or sentences describing the subject of the action in the latent vector and its behavior.
 
 **Outputs:**
 - MODEL
