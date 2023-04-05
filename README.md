@@ -166,6 +166,11 @@ Load the checkpoint model into UNet3DConditionModel. Usually used to generate a 
 - ckpt_name
     - The name of the checkpoint model. The model should be in the `models/checkpoints` folder.
 
+
+### LoraLoaderSequence
+Same function as `LoraLoader` node, but acts on UNet3DConditionModel. The input and output of the model are both of `ORIGINAL_MODEL` type.
+
+
 ### TrainUnetSequence
 Fine-tune the incoming model using latent vector and context, and convert the model to inference mode.
 
@@ -188,7 +193,7 @@ Fine-tune the incoming model using latent vector and context, and convert the mo
     - The number of steps to fine-tune the model. If the steps is 0, the model will not be fine-tuned.
 
 ### KSamplerSequence
-Same function as KSampler node, but added support for noise vector and image mask sequence.
+Same function as `KSampler` node, but added support for noise vector and image mask sequence.
 
 
 ## Limits

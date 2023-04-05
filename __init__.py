@@ -5,7 +5,7 @@ import numpy as np
 from PIL import Image
 from comfy import model_management
 import comfy.samplers
-from .sd import load_checkpoint_guess_config
+from .sd import load_checkpoint_guess_config, load_lora_for_models
 from .convert_from_ckpt import convert_scheduler_checkpoint
 from .tuneavideo.util import ddim_inversion
 import comfy.utils
@@ -334,6 +334,26 @@ class TrainUnetSequence:
         return (model_train,)
 
 
+class LoraLoaderSequence:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": { "model": ("ORIGINAL_MODEL",),
+                              "clip": ("CLIP", ),
+                              "lora_name": (folder_paths.get_filename_list("loras"), ),
+                              "strength_model": ("FLOAT", {"default": 1.0, "min": -10.0, "max": 10.0, "step": 0.01}),
+                              "strength_clip": ("FLOAT", {"default": 1.0, "min": -10.0, "max": 10.0, "step": 0.01}),
+                              }}
+    RETURN_TYPES = ("ORIGINAL_MODEL", "CLIP")
+    FUNCTION = "load_lora"
+
+    CATEGORY = "vid2vid"
+
+    def load_lora(self, model, clip, lora_name, strength_model, strength_clip):
+        lora_path = folder_paths.get_full_path("loras", lora_name)
+        model_lora, clip_lora = load_lora_for_models(model, clip, lora_path, strength_model, strength_clip)
+        return (model_lora, clip_lora)
+
+
 NODE_CLASS_MAPPINGS = {
     "LoadImageSequence": LoadImageSequence,
     "LoadImageMaskSequence": LoadImageMaskSequence,
@@ -341,6 +361,7 @@ NODE_CLASS_MAPPINGS = {
     "DdimInversionSequence": DdimInversionSequence,
     "SetLatentNoiseSequence": SetLatentNoiseSequence,
     "CheckpointLoaderSimpleSequence": CheckpointLoaderSimpleSequence,
+    "LoraLoaderSequence": LoraLoaderSequence,
     "TrainUnetSequence": TrainUnetSequence,
     "KSamplerSequence": KSamplerSequence,
 }
