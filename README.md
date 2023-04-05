@@ -29,7 +29,7 @@ All nodes are classified under the vid2vid category.
 ## Nodes
 
 ### LoadImageSequence
-<img alt="Local Image" src="images/nodes/LoadImageSequence.png" width="259" height="132"/>
+<img alt="Local Image" src="images/nodes/LoadImageSequence.png" width="518" height="264"/>
 
 Load image sequence from a folder.
 
@@ -60,7 +60,7 @@ Load image sequence from a folder.
 
 ---
 ### LoadImageMaskSequence
-<img alt="Local Image" src="images/nodes/LoadImageMaskSequence.png" width="259" height="132"/>
+<img alt="Local Image" src="images/nodes/LoadImageMaskSequence.png" width="518" height="264"/>
 
 Load mask sequence from a folder.
 
@@ -90,7 +90,7 @@ Load mask sequence from a folder.
 
 ---
 ### VAEEncodeForInpaintSequence
-<img alt="Local Image" src="images/nodes/VAEEncodeForInpaintSequence.png" width="259" height="132"/>
+<img alt="Local Image" src="images/nodes/VAEEncodeForInpaintSequence.png" width="518" height="264"/>
 
 Encode the input image sequence into a latent vector using a Variational Autoencoder (VAE) model. Also add image mask sequence to latent vector.
 
@@ -113,7 +113,7 @@ Encode the input image sequence into a latent vector using a Variational Autoenc
 
 ---
 ### DdimInversionSequence
-<img alt="Local Image" src="images/nodes/DdimInversionSequence.png" width="259" height="132"/>
+<img alt="Local Image" src="images/nodes/DdimInversionSequence.png" width="518" height="264"/>
 
 Generate a specific noise vector by inverting the input latent vector using the Ddim model. Usually used to improve the time consistency of the output image sequence.
 
@@ -137,7 +137,7 @@ Generate a specific noise vector by inverting the input latent vector using the 
 
 ---
 ### SetLatentNoiseSequence
-<img alt="Local Image" src="images/nodes/SetLatentNoiseSequence.png" width="259" height="132"/>
+<img alt="Local Image" src="images/nodes/SetLatentNoiseSequence.png" width="518" height="264"/>
 
 Add noise vector to latent vector.
 
@@ -157,7 +157,7 @@ Add noise vector to latent vector.
 
 ---
 ### CheckpointLoaderSimpleSequence
-<img alt="Local Image" src="images/nodes/CheckpointLoaderSimpleSequence.png" width="259" height="132"/>
+<img alt="Local Image" src="images/nodes/CheckpointLoaderSimpleSequence.png" width="518" height="264"/>
 
 Load the checkpoint model into UNet3DConditionModel. Usually used to generate a sequence of pictures with time continuity.
 
@@ -180,13 +180,13 @@ Load the checkpoint model into UNet3DConditionModel. Usually used to generate a 
 
 ---
 ### LoraLoaderSequence
-<img alt="Local Image" src="images/nodes/LoraLoaderSequence.png" width="259" height="132"/>
+<img alt="Local Image" src="images/nodes/LoraLoaderSequence.png" width="518" height="264"/>
 
 Same function as `LoraLoader` node, but acts on UNet3DConditionModel. Used after the `CheckpointLoaderSimpleSequence` node and before the `TrainUnetSequence` node. The input and output of the model are both of `ORIGINAL_MODEL` type.
 
 ---
 ### TrainUnetSequence
-<img alt="Local Image" src="images/nodes/TrainUnetSequence.png" width="259" height="132"/>
+<img alt="Local Image" src="images/nodes/TrainUnetSequence.png" width="518" height="264"/>
 
 Fine-tune the incoming model using latent vector and context, and convert the model to inference mode.
 
@@ -210,11 +210,11 @@ Fine-tune the incoming model using latent vector and context, and convert the mo
 
 ---
 ### KSamplerSequence
-<img alt="Local Image" src="images/nodes/KSamplerSequence.png" width="259" height="259"/>
+<img alt="Local Image" src="images/nodes/KSamplerSequence.png" width="518" height="518"/>
 
 Same function as `KSampler` node, but added support for noise vector and image mask sequence.
 
-
+---
 ## Limits
 - UNet3DCoditionModel has high demand for GPU memory. If you encounter out of memory error, try to reduce `n_sample_frames`. However, `n_sample_frames` must be greater than or equal to 3.
 
