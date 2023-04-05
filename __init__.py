@@ -254,7 +254,7 @@ class CheckpointLoaderSimpleSequence:
     def INPUT_TYPES(s):
         return {"required": { "ckpt_name": (folder_paths.get_filename_list("checkpoints"), ),
                              }}
-    RETURN_TYPES = ("ORIGINAL_MODEL", "CLIP", "VAE")
+    RETURN_TYPES = ("MODEL", "CLIP", "VAE")
     FUNCTION = "load_checkpoint"
 
     CATEGORY = "vid2vid"

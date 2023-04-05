@@ -1,4 +1,4 @@
-# Vid2vid Node Suite for ComfyUI
+# Vid2vid Node Suite for [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
 
 A node suite for ComfyUI that allows you to load image sequence and generate new image sequence with different styles or content.
 
@@ -54,7 +54,7 @@ Load image sequence from a folder.
 
 - n_sample_frames
     - The number of images in the sequence. The number of images in `image_sequence_folder` must be greater than or equal to `sample_start_idx - 1 + n_sample_frames * sample_frame_rate`.
-    - If you want to use the node `CheckpointLoaderSimpleSequence` to generate a sequence of pictures, set `n_sample_frames` >= 3 can improve the time consistency of the output image sequence.
+    - If you want to use the node `CheckpointLoaderSimpleSequence` to generate a sequence of pictures, set `n_sample_frames` >= 3.
 
 
 ### LoadImageMaskSequence
@@ -192,9 +192,9 @@ Same function as KSampler node, but added support for noise vector and image mas
 
 
 ## Limits
-- UNet3DCoditionModel has high demand for GPU memory. If you encounter out of memory error, try to reduce `n_sample_frames`. If your computer has less than 6GB of GPU memory, `n_sample_frames` should not exceed 3, but this may reduce the quality of the generated results
+- UNet3DCoditionModel has high demand for GPU memory. If you encounter out of memory error, try to reduce `n_sample_frames`. However, `n_sample_frames` must be greater than or equal to 3.
 
 
 - Some custom nodes do not support processing image sequences. The nodes listed below have been tested and are working properly:
-    - Official node
-    - comfy_controlnet_preprocessors
+    - [Official node](https://github.com/comfyanonymous/ComfyUI)
+    - [comfy_controlnet_preprocessors](https://github.com/Fannovel16/comfy_controlnet_preprocessors)

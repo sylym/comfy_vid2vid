@@ -3,8 +3,6 @@
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
-import os
-import json
 from einops import rearrange
 
 import torch
@@ -281,34 +279,25 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin):
         x: torch.FloatTensor,
         timesteps: Union[torch.Tensor, float, int],
         context: torch.Tensor,
+        y=None,
         control: Optional[torch.Tensor] = None,
-        class_labels: Optional[torch.Tensor] = None,
-        attention_mask: Optional[torch.Tensor] = None,
+        transformer_options={}
     ) -> Union[UNet3DConditionOutput, Tuple]:
 
         # prepare timestep and sample for comfyui
         if not torch.all(torch.eq(timesteps, timesteps[0])):
             raise ValueError("All timesteps must be equal.")
-        timestep = timesteps[0]
+        timesteps = timesteps[0]
 
         if not torch.all(torch.eq(context, context[0])):
             raise ValueError("All contexts must be equal.")
         context = context[0].unsqueeze(0)
 
         sample = rearrange(x.unsqueeze(0), "b f c h w -> b c f h w")
-        sample = sample.type(self.dtype)
-        context = context.type(self.dtype)
+        sample = sample.to(dtype=self.dtype)
+        context = context.to(dtype=self.dtype)
 
-        down_block_additional_residuals = None
-        mid_block_additional_residual = None
-
-        if control is not None:
-            down_block_additional_residuals = []
-            for output in control["output"]:
-                down_block_additional_residuals.append(rearrange(output.unsqueeze(0), "a b c d e -> a c b d e"))
-            mid_block_additional_residual = rearrange(control["middle"][0].unsqueeze(0), "a b c d e -> a c b d e")
-
-        del x, timesteps, control
+        del x
         torch.cuda.empty_cache()
 
         # By default samples have to be AT least a multiple of the overall upsampling factor.
@@ -325,27 +314,9 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin):
             logger.info("Forward upsample size to force interpolation output size.")
             forward_upsample_size = True
 
-        # prepare attention_mask
-        if attention_mask is not None:
-            attention_mask = (1 - attention_mask.to(sample.dtype)) * -10000.0
-            attention_mask = attention_mask.unsqueeze(1)
-
         # center input if necessary
         if self.config.center_input_sample:
             sample = 2 * sample - 1.0
-
-        # time
-        timesteps = timestep
-        if not torch.is_tensor(timesteps):
-            # This would be a good case for the `match` statement (Python 3.10+)
-            is_mps = sample.device.type == "mps"
-            if isinstance(timestep, float):
-                dtype = torch.float32 if is_mps else torch.float64
-            else:
-                dtype = torch.int32 if is_mps else torch.int64
-            timesteps = torch.tensor([timesteps], dtype=dtype, device=sample.device)
-        elif len(timesteps.shape) == 0:
-            timesteps = timesteps[None].to(sample.device)
 
         # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
         timesteps = timesteps.expand(sample.shape[0])
@@ -359,13 +330,13 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin):
         emb = self.time_embedding(t_emb)
 
         if self.class_embedding is not None:
-            if class_labels is None:
-                raise ValueError("class_labels should be provided when num_class_embeds > 0")
+            if y is None:
+                raise ValueError("y should be provided when num_class_embeds > 0")
 
             if self.config.class_embed_type == "timestep":
-                class_labels = self.time_proj(class_labels)
+                y = self.time_proj(y)
 
-            class_emb = self.class_embedding(class_labels).to(dtype=self.dtype)
+            class_emb = self.class_embedding(y).to(dtype=self.dtype)
             emb = emb + class_emb
 
         # pre-process
@@ -379,31 +350,43 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin):
                     hidden_states=sample,
                     temb=emb,
                     encoder_hidden_states=context,
-                    attention_mask=attention_mask,
                 )
             else:
                 sample, res_samples = downsample_block(hidden_states=sample, temb=emb)
 
             down_block_res_samples += res_samples
 
-        if down_block_additional_residuals is not None:
+        if control is not None and "input" in control and len(control['input']) > 0:
             new_down_block_res_samples = ()
 
             for down_block_res_sample, down_block_additional_residual in zip(
-                down_block_res_samples, down_block_additional_residuals
+                down_block_res_samples, reversed(control['input'])
             ):
-                down_block_res_sample += down_block_additional_residual
+                if down_block_additional_residual is not None:
+                    down_block_res_sample += rearrange(down_block_additional_residual.unsqueeze(0), "a b c d e -> a c b d e")
                 new_down_block_res_samples += (down_block_res_sample,)
 
             down_block_res_samples = new_down_block_res_samples
 
         # mid
         sample = self.mid_block(
-            sample, emb, encoder_hidden_states=context, attention_mask=attention_mask
+            sample, emb, encoder_hidden_states=context
         )
 
-        if mid_block_additional_residual is not None:
-            sample += mid_block_additional_residual
+        if control is not None and "middle" in control and len(control['middle']) > 0:
+            sample += rearrange(control["middle"][0].unsqueeze(0), "a b c d e -> a c b d e")
+
+        if control is not None and "output" in control and len(control['output']) > 0:
+            new_down_block_res_samples = ()
+
+            for down_block_res_sample, down_block_additional_residual in zip(
+                down_block_res_samples, control["output"]
+            ):
+                if down_block_additional_residual is not None:
+                    down_block_res_sample += rearrange(down_block_additional_residual.unsqueeze(0), "a b c d e -> a c b d e")
+                new_down_block_res_samples += (down_block_res_sample,)
+
+            down_block_res_samples = new_down_block_res_samples
 
         # up
         for i, upsample_block in enumerate(self.up_blocks):
@@ -424,7 +407,6 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin):
                     res_hidden_states_tuple=res_samples,
                     encoder_hidden_states=context,
                     upsample_size=upsample_size,
-                    attention_mask=attention_mask,
                 )
             else:
                 sample = upsample_block(
@@ -439,40 +421,3 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin):
         sample = rearrange(sample.squeeze(0), "c f h w -> f c h w")
 
         return sample
-
-    @classmethod
-    def from_pretrained_2d(cls, pretrained_model_path, subfolder=None):
-        if subfolder is not None:
-            pretrained_model_path = os.path.join(pretrained_model_path, subfolder)
-
-        config_file = os.path.join(pretrained_model_path, 'config.json')
-        if not os.path.isfile(config_file):
-            raise RuntimeError(f"{config_file} does not exist")
-        with open(config_file, "r") as f:
-            config = json.load(f)
-        config["_class_name"] = cls.__name__
-        config["down_block_types"] = [
-            "CrossAttnDownBlock3D",
-            "CrossAttnDownBlock3D",
-            "CrossAttnDownBlock3D",
-            "DownBlock3D"
-        ]
-        config["up_block_types"] = [
-            "UpBlock3D",
-            "CrossAttnUpBlock3D",
-            "CrossAttnUpBlock3D",
-            "CrossAttnUpBlock3D"
-        ]
-
-        from diffusers.utils import WEIGHTS_NAME
-        model = cls.from_config(config)
-        model_file = os.path.join(pretrained_model_path, WEIGHTS_NAME)
-        if not os.path.isfile(model_file):
-            raise RuntimeError(f"{model_file} does not exist")
-        state_dict = torch.load(model_file, map_location="cpu")
-        for k, v in model.state_dict().items():
-            if '_temp.' in k:
-                state_dict.update({k: v})
-        model.load_state_dict(state_dict)
-
-        return model

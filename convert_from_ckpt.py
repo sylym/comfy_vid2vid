@@ -1,4 +1,3 @@
-from diffusers.models import UNet2DConditionModel
 from .tuneavideo.models.unet import UNet3DConditionModel
 from diffusers import DDIMScheduler
 
