@@ -315,7 +315,8 @@ class TrainUnetSequence:
         return {"required": {"samples": ("LATENT",),
                              "model": ("ORIGINAL_MODEL",),
                              "context": ("CONDITIONING",),
-                             "steps": ("INT", {"default": 20, "min": 0, "max": 10000}),
+                             "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffff}),
+                             "steps": ("INT", {"default": 100, "min": 0, "max": 10000}),
                              }}
 
     RETURN_TYPES = ("MODEL",)
@@ -323,12 +324,12 @@ class TrainUnetSequence:
 
     CATEGORY = "vid2vid"
 
-    def train_unet(self, samples, model, context, steps):
+    def train_unet(self, samples, model, context, seed, steps):
         device = model_management.get_torch_device()
         noise_scheduler = convert_scheduler_checkpoint(model)
         samples = rearrange(samples["samples"], "f c h w -> c f h w")
         with torch.inference_mode(mode=False):
-            model_train = train(copy.deepcopy(model), noise_scheduler, samples, context[0][0].squeeze(0), device, max_train_steps=steps)
+            model_train = train(copy.deepcopy(model), noise_scheduler, samples, context[0][0].squeeze(0), device, max_train_steps=steps, seed=seed)
         if model_management.should_use_fp16():
             model_train.model = model_train.model.half()
         return (model_train,)

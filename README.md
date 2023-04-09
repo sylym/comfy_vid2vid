@@ -189,7 +189,7 @@ Same function as `LoraLoader` node, but acts on UNet3DConditionModel. Used after
 
 ---
 ### TrainUnetSequence
-<img alt="Local Image" src="images/nodes/TrainUnetSequence.png" width="518" height="264"/>
+<img alt="Local Image" src="images/nodes/TrainUnetSequence.png" width="518" height="400"/>
 
 Fine-tune the incoming model using latent vector and context, and convert the model to inference mode.
 
@@ -208,6 +208,8 @@ Fine-tune the incoming model using latent vector and context, and convert the mo
     - The fine-tuned model. This model is ready for inference.
 
 **Parameters:**
+- seed
+    - The seed used in model fine-tuning.
 - steps
     - The number of steps to fine-tune the model. If the steps is 0, the model will not be fine-tuned.
 
