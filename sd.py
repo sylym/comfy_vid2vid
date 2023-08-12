@@ -1,6 +1,6 @@
 import torch
 from comfy import model_management
-from comfy.sd import load_model_weights, ModelPatcher, VAE, CLIP, model_lora_keys
+from comfy.sd import load_model_weights, ModelPatcher, VAE, CLIP, model_lora_keys_unet, model_lora_keys_clip
 from comfy import utils
 from comfy import clip_vision
 from comfy.ldm.util import instantiate_from_config
@@ -261,8 +261,8 @@ def use_lora(pretrained_LoRA_path, model, alpha):
 
 
 def load_lora_for_models(model, clip, lora_path, strength_model, strength_clip):
-    key_map = model_lora_keys(model.model)
-    key_map = model_lora_keys(clip.cond_stage_model, key_map)
+    key_map = model_lora_keys_unet(model.model)
+    key_map = model_lora_keys_clip(clip.cond_stage_model, key_map)
     loaded = load_lora(lora_path, key_map)
     new_modelpatcher = model.clone()
     new_modelpatcher = use_lora(lora_path, new_modelpatcher, strength_model)
