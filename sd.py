@@ -1,6 +1,8 @@
 import torch
 from comfy import model_management
-from comfy.sd import load_model_weights, ModelPatcher, VAE, CLIP, model_lora_keys_unet, model_lora_keys_clip
+from comfy.sd import load_model_weights, VAE, CLIP
+from comfy.model_patcher import ModelPatcher
+from comfy.lora import model_lora_keys_unet, model_lora_keys_clip
 from comfy import utils
 from comfy import clip_vision
 from comfy.ldm.util import instantiate_from_config
